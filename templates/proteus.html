@@ -539,23 +539,36 @@
                     const messageDiv = document.getElementById('message');
                     messageDiv.innerHTML += `
                         <br><br>
-                        <strong>📋 How to Apply Connections in Proteus:</strong><br>
-                        <strong>Method 1 - Manual Wiring (Recommended):</strong><br>
-                        1. Open the Wiring Guide (.TXT file)<br>
-                        2. Open your original Proteus project<br>
-                        3. Press 'W' key to select Wire tool<br>
-                        4. Click on first pin, then click on second pin<br>
-                        5. Follow all connections listed in the guide<br><br>
+                        <div style="background-color: #fff3cd; border: 2px solid #ffc107; padding: 15px; border-radius: 5px; margin: 10px 0;">
+                            <strong>⚠️ IMPORTANT: Proteus files use a proprietary binary format.</strong><br>
+                            Connections CANNOT be automatically injected into the .pdsprj file.<br>
+                            You MUST add the connections manually in Proteus using one of the methods below.
+                        </div>
                         
-                        <strong>Method 2 - Netlist Compiler:</strong><br>
-                        1. Go to Tools → Netlist Compiler<br>
-                        2. Load the .NET file if supported<br>
-                        3. Or use it as reference for manual wiring<br><br>
+                        <strong>📋 How to Apply Connections in Proteus:</strong><br><br>
                         
-                        <strong>Method 3 - Wire Autorouter:</strong><br>
-                        1. Use Tools → Wire Autorouter (W)<br>
-                        2. Follow the Wiring Guide for pin connections<br>
-                        3. Let Proteus auto-route the wires
+                        <strong>✅ Method 1 - Manual Wiring (REQUIRED - Most Reliable):</strong><br>
+                        1. Open your ORIGINAL Proteus project file (.pdsprj)<br>
+                        2. Download and open the <strong>Wiring Guide (.TXT)</strong> file<br>
+                        3. In Proteus, click the <strong>Wire Mode</strong> button or press <strong>'W'</strong> key<br>
+                        4. For each connection in the guide:<br>
+                        &nbsp;&nbsp;&nbsp;• Click on the first component's pin<br>
+                        &nbsp;&nbsp;&nbsp;• Click on the second component's pin<br>
+                        &nbsp;&nbsp;&nbsp;• A wire will be created automatically<br>
+                        5. Repeat for all ${data.connections_count} connections<br>
+                        6. Save your project<br><br>
+                        
+                        <strong>Method 2 - Import Script (May work in some versions):</strong><br>
+                        1. Open your Proteus project<br>
+                        2. Go to <strong>System → Set Animation Script</strong><br>
+                        3. Load the <strong>.SCR file</strong><br>
+                        4. Run the script (it will attempt to wire automatically)<br>
+                        5. Check for errors - you may need to fix component names<br><br>
+                        
+                        <div style="background-color: #d1ecf1; border: 1px solid #bee5eb; padding: 10px; border-radius: 5px;">
+                            <strong>💡 Pro Tip:</strong> Print or display the Wiring Guide on a second screen<br>
+                            while you manually wire in Proteus for fastest results!
+                        </div>
                     `;
                 } else {
                     showResult('error', data.error || 'Save failed');

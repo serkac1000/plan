@@ -140,66 +140,71 @@ def parse_binary_dsn_file(filepath):
             with zip_file.open('ROOT.DSN') as dsn_file:
                 binary_data = dsn_file.read()
                 
-                # Check if it's an ISIS binary file
-                if not binary_data.startswith(b'ISIS SCHEMATIC FILE'):
-                    print("Not a recognized ISIS binary format")
-                    return []
-                
-                print("Detected Proteus 8.x ISIS binary schematic file")
+                print(f"DSN file size: {len(binary_data)} bytes")
+                print(f"First 50 bytes: {binary_data[:50]}")
                 
                 # Try to extract component names using pattern matching
                 # Look for common component patterns in the binary data
                 text_content = binary_data.decode('latin-1', errors='ignore')
                 
-                # Look for component reference designators (R1, C1, IC1, U1, D1, LED1, etc.)
-                ref_des_pattern = r'\b([RCLDIUQJKSTWX]|LED|SW|BTN)(\d{1,3})\b'
-                found_refs = re.findall(ref_des_pattern, text_content)
+                # Look for component reference designators with better pattern
+                # This pattern looks for component IDs that appear in typical Proteus format
+                patterns = [
+                    r'\b([RCLDIUQJKSTWX])(\d{1,3})\b',  # Standard components
+                    r'\b(LED|SW|BTN|POT|LDR|LCD)(\d{1,3})\b',  # Named components
+                    r'\b(ARDUINO|ATmega|PIC|ESP|STM)([A-Z0-9_]{1,10})\b'  # Microcontrollers
+                ]
                 
                 # Create unique component list
                 seen_components = set()
                 component_id = 1
                 
-                for prefix, number in found_refs:
-                    comp_id = f"{prefix}{number}"
-                    if comp_id not in seen_components and len(comp_id) <= 10:
-                        seen_components.add(comp_id)
-                        
-                        # Determine component type and default pins
-                        comp_type, pins = get_component_type_and_pins(prefix)
-                        
-                        components.append({
-                            'id': comp_id,
-                            'name': comp_id,
-                            'type': comp_type,
-                            'value': 'See Proteus',
-                            'pins': pins,
-                            'x': str(component_id * 100),
-                            'y': '100'
-                        })
-                        component_id += 1
+                for pattern in patterns:
+                    found_refs = re.findall(pattern, text_content, re.IGNORECASE)
+                    
+                    for prefix, number in found_refs:
+                        comp_id = f"{prefix}{number}"
+                        if comp_id not in seen_components and len(comp_id) <= 15:
+                            seen_components.add(comp_id)
+                            
+                            # Determine component type and default pins
+                            comp_type, pins = get_component_type_and_pins(prefix)
+                            
+                            components.append({
+                                'id': comp_id,
+                                'name': comp_id,
+                                'type': comp_type,
+                                'value': 'See Proteus',
+                                'pins': pins,
+                                'x': str(component_id * 100),
+                                'y': '100'
+                            })
+                            component_id += 1
                 
                 # Add power rails if detected
-                if b'VCC' in binary_data or b'+5V' in binary_data:
-                    components.append({
-                        'id': 'VCC',
-                        'name': 'VCC',
-                        'type': 'Power Rail',
-                        'value': '+5V',
-                        'pins': [{'name': 'OUT', 'connected_to': '', 'net': ''}],
-                        'x': '50',
-                        'y': '50'
-                    })
+                if b'VCC' in binary_data or b'+5V' in binary_data or b'POWER' in binary_data:
+                    if 'VCC' not in seen_components:
+                        components.append({
+                            'id': 'VCC',
+                            'name': 'VCC',
+                            'type': 'Power Rail',
+                            'value': '+5V',
+                            'pins': [{'name': 'OUT', 'connected_to': '', 'net': ''}],
+                            'x': '50',
+                            'y': '50'
+                        })
                 
-                if b'GND' in binary_data or b'GROUND' in binary_data:
-                    components.append({
-                        'id': 'GND',
-                        'name': 'GND',
-                        'type': 'Power Rail',
-                        'value': '0V',
-                        'pins': [{'name': 'OUT', 'connected_to': '', 'net': ''}],
-                        'x': '50',
-                        'y': '200'
-                    })
+                if b'GND' in binary_data or b'GROUND' in binary_data or b'0V' in binary_data:
+                    if 'GND' not in seen_components:
+                        components.append({
+                            'id': 'GND',
+                            'name': 'GND',
+                            'type': 'Power Rail',
+                            'value': '0V',
+                            'pins': [{'name': 'OUT', 'connected_to': '', 'net': ''}],
+                            'x': '50',
+                            'y': '200'
+                        })
                 
                 if components:
                     print(f"Extracted {len(components)} components from binary DSN: {[c['id'] for c in components]}")
@@ -210,6 +215,8 @@ def parse_binary_dsn_file(filepath):
                     
     except Exception as e:
         print(f"Error parsing binary DSN file: {e}")
+        import traceback
+        traceback.print_exc()
         return []
 
 def get_component_type_and_pins(prefix):
@@ -286,12 +293,20 @@ def parse_proteus_file(filepath):
                     file_list = zip_file.namelist()
                     print(f"ZIP contents: {file_list}")
                     
+                    # First, try to parse ROOT.DSN as binary (Proteus 8.x format)
+                    if 'ROOT.DSN' in file_list:
+                        print("Found ROOT.DSN, attempting binary DSN parsing...")
+                        components = parse_binary_dsn_file(filepath)
+                        if components and len(components) > 0:
+                            print(f"Successfully extracted {len(components)} components from binary DSN")
+                            return components
+                    
+                    # Fall back to XML parsing
                     for file_name in file_list:
-                        if file_name.endswith(('.pdsprj', '.xml', '.dsn', '.PWI')):
-                            print(f"Trying to parse: {file_name}")
+                        if file_name.endswith(('.xml', '.XML')):
+                            print(f"Trying to parse XML file: {file_name}")
                             with zip_file.open(file_name) as xml_file:
                                 try:
-                                    # Try to read as text first
                                     content = xml_file.read().decode('utf-8', errors='ignore')
                                     if '<' in content and '>' in content:
                                         root = ET.fromstring(content)
