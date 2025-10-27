@@ -281,11 +281,6 @@ def parse_proteus_file(filepath):
         
         # Try as ZIP file first (most common for newer Proteus versions)
         if file_info.get('is_zip', False):
-            # Try to parse binary DSN file for Proteus 8.x
-            components = parse_binary_dsn_file(filepath)
-            if components:
-                print(f"Successfully extracted {len(components)} components from binary DSN")
-                return components
             try:
                 with zipfile.ZipFile(filepath, 'r') as zip_file:
                     file_list = zip_file.namelist()
