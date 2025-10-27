@@ -5,3 +5,37 @@ config.ini
 __pycache__/
 *.pyc
 .env
+
+# Python
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.pythonlibs/
+*.egg-info/
+dist/
+build/
+
+# Flask
+instance/
+.webassets-cache
+
+# Uploads (keep directory structure but ignore files)
+uploads/*.pdsprj
+uploads/*.net
+uploads/*.scr
+uploads/*.txt
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

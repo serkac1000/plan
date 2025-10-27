@@ -127,6 +127,7 @@ def read_original_proteus_content(filepath):
 def parse_proteus_file(filepath):
     """Parse Proteus .pdsprj file and extract components"""
     components = []
+    file_info = {}
     
     try:
         # Get file info first
@@ -822,4 +823,4 @@ def download_proteus(filename):
         return jsonify({'error': 'File not found'}), 404
 
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
