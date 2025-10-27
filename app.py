@@ -7,6 +7,7 @@ from werkzeug.utils import secure_filename
 import zipfile
 import tempfile
 import shutil
+import re
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
@@ -124,6 +125,150 @@ def read_original_proteus_content(filepath):
         print(f"Error reading original content: {e}")
         return {}
 
+def parse_binary_dsn_file(filepath):
+    """
+    Attempt to extract component information from Proteus 8.x binary DSN files.
+    This is a best-effort parser that looks for component patterns in the binary data.
+    """
+    components = []
+    
+    try:
+        with zipfile.ZipFile(filepath, 'r') as zip_file:
+            if 'ROOT.DSN' not in zip_file.namelist():
+                return []
+            
+            with zip_file.open('ROOT.DSN') as dsn_file:
+                binary_data = dsn_file.read()
+                
+                # Check if it's an ISIS binary file
+                if not binary_data.startswith(b'ISIS SCHEMATIC FILE'):
+                    print("Not a recognized ISIS binary format")
+                    return []
+                
+                print("Detected Proteus 8.x ISIS binary schematic file")
+                
+                # Try to extract component names using pattern matching
+                # Look for common component patterns in the binary data
+                text_content = binary_data.decode('latin-1', errors='ignore')
+                
+                # Look for component reference designators (R1, C1, IC1, U1, D1, LED1, etc.)
+                ref_des_pattern = r'\b([RCLDIUQJKSTWX]|LED|SW|BTN)(\d{1,3})\b'
+                found_refs = re.findall(ref_des_pattern, text_content)
+                
+                # Create unique component list
+                seen_components = set()
+                component_id = 1
+                
+                for prefix, number in found_refs:
+                    comp_id = f"{prefix}{number}"
+                    if comp_id not in seen_components and len(comp_id) <= 10:
+                        seen_components.add(comp_id)
+                        
+                        # Determine component type and default pins
+                        comp_type, pins = get_component_type_and_pins(prefix)
+                        
+                        components.append({
+                            'id': comp_id,
+                            'name': comp_id,
+                            'type': comp_type,
+                            'value': 'See Proteus',
+                            'pins': pins,
+                            'x': str(component_id * 100),
+                            'y': '100'
+                        })
+                        component_id += 1
+                
+                # Add power rails if detected
+                if b'VCC' in binary_data or b'+5V' in binary_data:
+                    components.append({
+                        'id': 'VCC',
+                        'name': 'VCC',
+                        'type': 'Power Rail',
+                        'value': '+5V',
+                        'pins': [{'name': 'OUT', 'connected_to': '', 'net': ''}],
+                        'x': '50',
+                        'y': '50'
+                    })
+                
+                if b'GND' in binary_data or b'GROUND' in binary_data:
+                    components.append({
+                        'id': 'GND',
+                        'name': 'GND',
+                        'type': 'Power Rail',
+                        'value': '0V',
+                        'pins': [{'name': 'OUT', 'connected_to': '', 'net': ''}],
+                        'x': '50',
+                        'y': '200'
+                    })
+                
+                if components:
+                    print(f"Extracted {len(components)} components from binary DSN: {[c['id'] for c in components]}")
+                    return components
+                else:
+                    print("Could not extract components from binary DSN")
+                    return []
+                    
+    except Exception as e:
+        print(f"Error parsing binary DSN file: {e}")
+        return []
+
+def get_component_type_and_pins(prefix):
+    """Return component type and default pins based on reference designator prefix"""
+    pin_configs = {
+        'R': ('Resistor', [
+            {'name': '1', 'connected_to': '', 'net': ''},
+            {'name': '2', 'connected_to': '', 'net': ''}
+        ]),
+        'C': ('Capacitor', [
+            {'name': '+', 'connected_to': '', 'net': ''},
+            {'name': '-', 'connected_to': '', 'net': ''}
+        ]),
+        'L': ('Inductor', [
+            {'name': '1', 'connected_to': '', 'net': ''},
+            {'name': '2', 'connected_to': '', 'net': ''}
+        ]),
+        'D': ('Diode', [
+            {'name': 'A', 'connected_to': '', 'net': ''},
+            {'name': 'K', 'connected_to': '', 'net': ''}
+        ]),
+        'LED': ('LED', [
+            {'name': 'A', 'connected_to': '', 'net': ''},
+            {'name': 'K', 'connected_to': '', 'net': ''}
+        ]),
+        'IC': ('IC', [
+            {'name': 'VCC', 'connected_to': '', 'net': ''},
+            {'name': 'GND', 'connected_to': '', 'net': ''},
+            {'name': '1', 'connected_to': '', 'net': ''},
+            {'name': '2', 'connected_to': '', 'net': ''},
+            {'name': '3', 'connected_to': '', 'net': ''},
+            {'name': '4', 'connected_to': '', 'net': ''}
+        ]),
+        'U': ('IC', [
+            {'name': 'VCC', 'connected_to': '', 'net': ''},
+            {'name': 'GND', 'connected_to': '', 'net': ''},
+            {'name': '1', 'connected_to': '', 'net': ''},
+            {'name': '2', 'connected_to': '', 'net': ''}
+        ]),
+        'Q': ('Transistor', [
+            {'name': 'C', 'connected_to': '', 'net': ''},
+            {'name': 'B', 'connected_to': '', 'net': ''},
+            {'name': 'E', 'connected_to': '', 'net': ''}
+        ]),
+        'SW': ('Switch', [
+            {'name': '1', 'connected_to': '', 'net': ''},
+            {'name': '2', 'connected_to': '', 'net': ''}
+        ]),
+        'BTN': ('Button', [
+            {'name': '1', 'connected_to': '', 'net': ''},
+            {'name': '2', 'connected_to': '', 'net': ''}
+        ])
+    }
+    
+    return pin_configs.get(prefix, ('Component', [
+        {'name': '1', 'connected_to': '', 'net': ''},
+        {'name': '2', 'connected_to': '', 'net': ''}
+    ]))
+
 def parse_proteus_file(filepath):
     """Parse Proteus .pdsprj file and extract components"""
     components = []
@@ -136,6 +281,11 @@ def parse_proteus_file(filepath):
         
         # Try as ZIP file first (most common for newer Proteus versions)
         if file_info.get('is_zip', False):
+            # Try to parse binary DSN file for Proteus 8.x
+            components = parse_binary_dsn_file(filepath)
+            if components:
+                print(f"Successfully extracted {len(components)} components from binary DSN")
+                return components
             try:
                 with zipfile.ZipFile(filepath, 'r') as zip_file:
                     file_list = zip_file.namelist()
