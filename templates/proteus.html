@@ -192,6 +192,49 @@
         .back-link:hover {
             text-decoration: underline;
         }
+        .pin-details {
+            display: none;
+            background-color: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 15px;
+            margin-top: 10px;
+            border-radius: 5px;
+        }
+        .pin-details.show {
+            display: block;
+        }
+        .pin-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .pin-item {
+            background-color: #e7f3ff;
+            padding: 6px 10px;
+            border-radius: 3px;
+            border: 1px solid #b3d9ff;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+        .view-pins-btn {
+            background-color: #ffc107;
+            color: #000;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-left: 5px;
+        }
+        .view-pins-btn:hover {
+            background-color: #e0a800;
+        }
+        .component-details {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
@@ -328,26 +371,60 @@
             const tbody = document.getElementById('componentsTableBody');
             tbody.innerHTML = '';
 
-            components.forEach(component => {
+            components.forEach((component, index) => {
                 const row = document.createElement('tr');
                 
-                const pinsText = component.pins.map(pin => pin.name).join(', ');
+                const pinsCount = component.pins.length;
+                const pinsPreview = component.pins.slice(0, 3).map(pin => pin.name).join(', ');
+                const pinsText = pinsCount > 3 ? `${pinsPreview}... (${pinsCount} pins)` : pinsPreview;
                 const position = `(${component.x}, ${component.y})`;
                 
                 row.innerHTML = `
                     <td>${component.id}</td>
-                    <td>${component.name}</td>
+                    <td>
+                        ${component.name}
+                        <div class="component-details">Type: ${component.type}</div>
+                    </td>
                     <td>${component.type}</td>
                     <td>${component.value}</td>
-                    <td>${pinsText}</td>
+                    <td>
+                        <div>${pinsText}</div>
+                        <button class="view-pins-btn" onclick="togglePinDetails('pins_${index}')">
+                            📌 View All ${pinsCount} Pins
+                        </button>
+                    </td>
                     <td>${position}</td>
                 `;
                 
                 tbody.appendChild(row);
+                
+                // Add detailed pin row (hidden by default)
+                const detailRow = document.createElement('tr');
+                detailRow.innerHTML = `
+                    <td colspan="6">
+                        <div id="pins_${index}" class="pin-details">
+                            <h4>Recognized Pin Names for ${component.name} (${component.id}):</h4>
+                            <div class="pin-list">
+                                ${component.pins.map(pin => `
+                                    <div class="pin-item">${pin.name}</div>
+                                `).join('')}
+                            </div>
+                            <div style="margin-top: 10px; font-size: 12px; color: #666;">
+                                <strong>Note:</strong> Use these exact pin names when creating connections below.
+                            </div>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(detailRow);
             });
 
             // Add initial connection row
             addConnectionRow();
+        }
+        
+        function togglePinDetails(pinId) {
+            const pinDetails = document.getElementById(pinId);
+            pinDetails.classList.toggle('show');
         }
 
         function addConnectionRow() {
