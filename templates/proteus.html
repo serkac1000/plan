@@ -531,23 +531,37 @@
                     downloadLinks.innerHTML = `
                         <a href="/download_proteus/${data.updated_file}" target="_blank">📁 Download Updated Project</a>
                         <a href="/download_proteus/netlist_${getCurrentTimestamp()}.net" target="_blank">📋 Download Netlist (.NET)</a>
-                        <a href="/download_proteus/connect_script_${getCurrentTimestamp()}.scr" target="_blank">⚡ Download Script (.SCR)</a>
-                        <a href="/download_proteus/wiring_guide_${getCurrentTimestamp()}.txt" target="_blank">📖 Download Wiring Guide</a>
+                        <a href="/download_proteus/connect_script_${getCurrentTimestamp()}.scr" target="_blank">🤖 Download Autorouter Script (.SCR)</a>
+                        <a href="/download_proteus/wiring_guide_${getCurrentTimestamp()}.txt" target="_blank">📖 Download Wiring Guide (Backup)</a>
                     `;
                     
                     // Show instructions for using the files
                     const messageDiv = document.getElementById('message');
                     messageDiv.innerHTML += `
                         <br><br>
-                        <div style="background-color: #fff3cd; border: 2px solid #ffc107; padding: 15px; border-radius: 5px; margin: 10px 0;">
-                            <strong>⚠️ IMPORTANT: Proteus files use a proprietary binary format.</strong><br>
-                            Connections CANNOT be automatically injected into the .pdsprj file.<br>
-                            You MUST add the connections manually in Proteus using one of the methods below.
+                        <div style="background-color: #d4edda; border: 2px solid #28a745; padding: 15px; border-radius: 5px; margin: 10px 0;">
+                            <strong>✅ GOOD NEWS: Wire Autorouter will do the wiring automatically!</strong><br>
+                            The generated script uses Proteus Wire Autorouter to automatically route all connections.<br>
+                            No manual wiring needed - just run the script!
                         </div>
                         
                         <strong>📋 How to Apply Connections in Proteus:</strong><br><br>
                         
-                        <strong>✅ Method 1 - Manual Wiring (REQUIRED - Most Reliable):</strong><br>
+                        <strong>🚀 Method 1 - AUTOROUTER (Recommended - Automatic!):</strong><br>
+                        1. Open your ORIGINAL Proteus project file (.pdsprj)<br>
+                        2. Download the <strong>Script (.SCR)</strong> file<br>
+                        3. In Proteus, go to <strong>Tools → Plugins → Script Editor</strong><br>
+                        4. Load the .SCR file or paste its contents<br>
+                        5. Click <strong>Run</strong> - autorouter will wire everything!<br>
+                        6. Verify the routes and save your project<br><br>
+                        
+                        <strong>Alternative - Command Line Method:</strong><br>
+                        1. Open your Proteus project<br>
+                        2. Press <strong>F12</strong> to open the command line<br>
+                        3. Type: <code>SCRIPT "path/to/connect_script_*.scr"</code><br>
+                        4. Press Enter - done!<br><br>
+                        
+                        <strong>Method 2 - Manual Wiring (Backup if autorouter fails):</strong><br>
                         1. Open your ORIGINAL Proteus project file (.pdsprj)<br>
                         2. Download and open the <strong>Wiring Guide (.TXT)</strong> file<br>
                         3. In Proteus, click the <strong>Wire Mode</strong> button or press <strong>'W'</strong> key<br>
@@ -557,13 +571,6 @@
                         &nbsp;&nbsp;&nbsp;• A wire will be created automatically<br>
                         5. Repeat for all ${data.connections_count} connections<br>
                         6. Save your project<br><br>
-                        
-                        <strong>Method 2 - Import Script (May work in some versions):</strong><br>
-                        1. Open your Proteus project<br>
-                        2. Go to <strong>System → Set Animation Script</strong><br>
-                        3. Load the <strong>.SCR file</strong><br>
-                        4. Run the script (it will attempt to wire automatically)<br>
-                        5. Check for errors - you may need to fix component names<br><br>
                         
                         <div style="background-color: #d1ecf1; border: 1px solid #bee5eb; padding: 10px; border-radius: 5px;">
                             <strong>💡 Pro Tip:</strong> Print or display the Wiring Guide on a second screen<br>
