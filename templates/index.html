@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arduino/ESP32 Project Code Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="text"], select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .checkbox-item input[type="checkbox"] {
+            width: auto;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .download-links {
+            margin-top: 15px;
+        }
+        .download-links a {
+            display: inline-block;
+            margin-right: 15px;
+            padding: 8px 15px;
+            background-color: #28a745;
+            color: white;
+            text-decoration: none;
+            border-radius: 3px;
+        }
+        .download-links a:hover {
+            background-color: #218838;
+        }
+        .connection-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+        .connection-table th,
+        .connection-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        .connection-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #333;
+        }
+        .connection-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .connection-table tr:hover {
+            background-color: #f5f5f5;
+        }
+        .component-header {
+            font-weight: bold;
+            background-color: #e9ecef !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Arduino/ESP32 Project Code Generator</h1>
+        
+        <div style="text-align: center; margin-bottom: 20px;">
+            <a href="/proteus" style="background-color: #6f42c1; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-right: 10px;">
+                🔧 Proteus Connection Editor
+            </a>
+            <span style="color: #666;">or use the form below for Arduino code generation</span>
+        </div>
+        
+        <form id="projectForm">
+            <div class="form-group">
+                <label for="project_name">Project Name:</label>
+                <input type="text" id="project_name" name="project_name" placeholder="e.g., Voice Command Motor Control" required>
+            </div>
+
+            <div class="form-group">
+                <label for="microcontroller">Primary Microcontroller:</label>
+                <select id="microcontroller" name="microcontroller" required>
+                    <option value="">Select Microcontroller</option>
+                    <option value="ESP32">ESP32</option>
+                    <option value="Arduino Uno">Arduino Uno</option>
+                    <option value="Arduino Nano">Arduino Nano</option>
+                    <option value="Arduino Mega">Arduino Mega</option>
+                    <option value="NodeMCU">NodeMCU</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="additional_boards">Additional Boards (if any):</label>
+                <input type="text" id="additional_boards" name="additional_boards" placeholder="e.g., Arduino Uno for sensors">
+            </div>
+
+            <div class="form-group">
+                <label for="motor_type">Motor Type:</label>
+                <select id="motor_type" name="motor_type">
+                    <option value="">Select Motor Type</option>
+                    <option value="DC Motor">DC Motor</option>
+                    <option value="Servo Motor">Servo Motor</option>
+                    <option value="Stepper Motor">Stepper Motor</option>
+                    <option value="None">No Motor</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="motor_driver">Motor Driver:</label>
+                <select id="motor_driver" name="motor_driver">
+                    <option value="">Select Motor Driver</option>
+                    <option value="L298N">L298N</option>
+                    <option value="L293D">L293D</option>
+                    <option value="A4988">A4988 (Stepper)</option>
+                    <option value="DRV8825">DRV8825 (Stepper)</option>
+                    <option value="None">No Driver Needed</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Sensors (select all that apply):</label>
+                <div class="checkbox-group">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="ir_sensor" name="sensors" value="IR Sensor">
+                        <label for="ir_sensor">IR Sensor</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="ultrasonic" name="sensors" value="Ultrasonic Sensor">
+                        <label for="ultrasonic">Ultrasonic Sensor</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="temperature" name="sensors" value="Temperature Sensor">
+                        <label for="temperature">Temperature Sensor</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="gyroscope" name="sensors" value="Gyroscope">
+                        <label for="gyroscope">Gyroscope</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="accelerometer" name="sensors" value="Accelerometer">
+                        <label for="accelerometer">Accelerometer</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="switches">Switches/Buttons:</label>
+                <select id="switches" name="switches">
+                    <option value="">Select Switch Type</option>
+                    <option value="Push Button">Push Button</option>
+                    <option value="Toggle Switch">Toggle Switch</option>
+                    <option value="Rotary Encoder">Rotary Encoder</option>
+                    <option value="Multiple Buttons">Multiple Buttons</option>
+                    <option value="None">No Switches</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="communication">Communication Method:</label>
+                <select id="communication" name="communication">
+                    <option value="">Select Communication</option>
+                    <option value="Bluetooth Serial">Bluetooth Serial</option>
+                    <option value="WiFi">WiFi</option>
+                    <option value="Serial (UART)">Serial (UART)</option>
+                    <option value="I2C">I2C</option>
+                    <option value="SPI">SPI</option>
+                    <option value="None">No Communication</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="power_supply">Power Supply:</label>
+                <select id="power_supply" name="power_supply">
+                    <option value="">Select Power Supply</option>
+                    <option value="USB (5V)">USB (5V)</option>
+                    <option value="9V Battery">9V Battery</option>
+                    <option value="12V Adapter">12V Adapter</option>
+                    <option value="Li-Po Battery">Li-Po Battery</option>
+                    <option value="External 5V">External 5V</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="default_states">Default Pin States:</label>
+                <select id="default_states" name="default_states">
+                    <option value="Safe (All LOW/OFF)">Safe (All LOW/OFF)</option>
+                    <option value="Custom">Custom Configuration</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <div class="checkbox-item">
+                    <input type="checkbox" id="logging_enabled" name="logging_enabled">
+                    <label for="logging_enabled">Enable Serial Logging/Debug Output</label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="custom_requirements">Additional Requirements/Notes:</label>
+                <textarea id="custom_requirements" name="custom_requirements" placeholder="Enter any specific requirements, pin assignments, or special features needed..."></textarea>
+            </div>
+
+            <button type="submit">Generate Project Requirements</button>
+        </form>
+
+        <div id="result" class="result">
+            <div id="message"></div>
+            <div id="downloadLinks" class="download-links"></div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('projectForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            
+            fetch('/submit_parameters', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                const resultDiv = document.getElementById('result');
+                const messageDiv = document.getElementById('message');
+                const downloadLinksDiv = document.getElementById('downloadLinks');
+                
+                if (data.status === 'success') {
+                    resultDiv.className = 'result success';
+                    messageDiv.innerHTML = `
+                        <h3>✅ ${data.message}</h3>
+                        <h4>Connection Table Preview:</h4>
+                        ${generateConnectionTableHTML(data.connection_table)}
+                    `;
+                    
+                    downloadLinksDiv.innerHTML = `
+                        <a href="/download/${data.output_file}" target="_blank">Download Requirements File</a>
+                        <a href="/view_output/${data.output_file}" target="_blank">View Full Details</a>
+                        <button onclick="generateArduinoCode()" style="background-color: #17a2b8; margin-left: 10px;">Generate Arduino Code</button>
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    messageDiv.textContent = 'Error: ' + (data.message || 'Unknown error occurred');
+                    downloadLinksDiv.innerHTML = '';
+                }
+                
+                resultDiv.style.display = 'block';
+            })
+            .catch(error => {
+                const resultDiv = document.getElementById('result');
+                const messageDiv = document.getElementById('message');
+                
+                resultDiv.className = 'result error';
+                messageDiv.textContent = 'Error: ' + error.message;
+                resultDiv.style.display = 'block';
+            });
+        });
+
+        function generateConnectionTableHTML(connections) {
+            if (!connections || connections.length === 0) {
+                return '<p>No connections to display</p>';
+            }
+
+            let tableHTML = `
+                <table class="connection-table">
+                    <thead>
+                        <tr>
+                            <th>Component</th>
+                            <th>Pin/Connection</th>
+                            <th>Connected To</th>
+                            <th>Default State</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            connections.forEach(conn => {
+                if (conn.is_header) {
+                    tableHTML += `
+                        <tr class="component-header">
+                            <td colspan="5"><strong>${conn.component}</strong></td>
+                        </tr>
+                    `;
+                } else {
+                    tableHTML += `
+                        <tr>
+                            <td>${conn.component}</td>
+                            <td>${conn.pin}</td>
+                            <td>${conn.connected_to}</td>
+                            <td>${conn.default_state}</td>
+                            <td>${conn.description}</td>
+                        </tr>
+                    `;
+                }
+            });
+
+            tableHTML += `
+                    </tbody>
+                </table>
+            `;
+
+            return tableHTML;
+        }
+
+        function generateArduinoCode() {
+            fetch('/generate_code', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Create a modal or new section to display the code
+                    showCodeModal(data.code, data.filename);
+                } else {
+                    alert('Error generating code: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                alert('Error: ' + error.message);
+            });
+        }
+
+        function showCodeModal(code, filename) {
+            // Create modal overlay
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0,0,0,0.5);
+                z-index: 1000;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            `;
+
+            // Create modal content
+            const modalContent = document.createElement('div');
+            modalContent.style.cssText = `
+                background-color: white;
+                padding: 20px;
+                border-radius: 10px;
+                max-width: 90%;
+                max-height: 90%;
+                overflow: auto;
+                position: relative;
+            `;
+
+            modalContent.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>Generated Arduino Code</h2>
+                    <button onclick="this.closest('.modal').remove()" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer;">✕</button>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <strong>Filename:</strong> ${filename}
+                </div>
+                <pre style="background-color: #f8f9fa; padding: 15px; border-radius: 5px; overflow-x: auto; font-family: 'Courier New', monospace; font-size: 14px; line-height: 1.4;">${code}</pre>
+                <div style="margin-top: 15px; text-align: center;">
+                    <a href="/download/${filename}" style="background-color: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; margin-right: 10px;">Download .ino File</a>
+                    <button onclick="copyToClipboard(\`${code.replace(/`/g, '\\`')}\`)" style="background-color: #17a2b8; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer;">Copy Code</button>
+                </div>
+            `;
+
+            modal.className = 'modal';
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+
+            // Close modal when clicking outside
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(function() {
+                alert('Code copied to clipboard!');
+            }, function(err) {
+                console.error('Could not copy text: ', err);
+                alert('Failed to copy code to clipboard');
+            });
+        }
+    </script>
+</body>
+</html>

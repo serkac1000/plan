@@ -1,0 +1,66 @@
+#================================================================
+# PROTEUS WIRING GUIDE
+#================================================================
+# Generated: 2025-10-27 14:39:16
+# Total Connections: 3
+#
+# This guide provides step-by-step instructions for wiring your
+# circuit in Proteus. For best results, use the Manual Wiring method.
+#================================================================
+
+## 1. QUICK WIRING LIST
+# Use this list for rapid manual wiring.
+#----------------------------------------------------------------
+01. PWR1            Pin OUT        ───► R1              Pin 1         
+02. R1              Pin 2          ───► D1              Pin A         
+03. D1              Pin K          ───► PWR2            Pin OUT       
+
+## 2. DETAILED COMPONENT-BY-COMPONENT GUIDE
+# Wire all connections for one component before moving to the next.
+#----------------------------------------------------------------
+
+### Component: D1
+  - Pin A          → connects to R1.2
+  - Pin K          → connects to PWR2.OUT
+
+
+### Component: PWR1
+  - Pin OUT        → connects to R1.1
+
+
+### Component: PWR2
+  - Pin OUT        → connects to D1.K
+
+
+### Component: R1
+  - Pin 1          → connects to PWR1.OUT
+  - Pin 2          → connects to D1.A
+
+
+## 3. HOW TO WIRE IN PROTEUS
+#----------------------------------------------------------------
+#
+# ### Method 1: Manual Wiring (Recommended)
+#   1. Open your Proteus project.
+#   2. Press the 'W' key to activate the Wire tool.
+#   3. Follow the 'QUICK WIRING LIST' or the 'COMPONENT-BY-COMPONENT GUIDE'.
+#   4. Click on the first component's pin (e.g., IC1.TXD).
+#   5. Click on the second component's pin (e.g., CONN1.RXD).
+#   6. A wire will be created. Repeat for all connections.
+#
+# ### Method 2: Using the Generated Script (.SCR file)
+#   1. Go to 'File' -> 'Run Script...' in Proteus.
+#   2. Select the accompanying .scr file.
+#   3. The script will attempt to wire everything automatically.
+#      (Note: This may fail if component names do not match exactly).
+#
+## 4. VERIFICATION CHECKLIST
+#----------------------------------------------------------------
+#  [ ] All connections from the list have been made.
+#  [ ] No accidental short circuits (especially to VCC or GND).
+#  [ ] Power and Ground pins for all ICs are correctly wired.
+#  [ ] Run the simulation to ensure the circuit behaves as expected.
+#
+##================================================================
+# End of Guide
+#================================================================

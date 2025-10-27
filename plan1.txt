@@ -1,0 +1,723 @@
+ESP32 Voice Command DC Motor Control
+This project uses an ESP32 microcontroller to receive a voice command ("ball") via Bluetooth Serial from a paired device (e.g., a Bluetooth earphone or smartphone app). Upon recognizing the word "ball", the ESP32 sets a variable V from 0 to 1 and activates a DC motor connected to an L298N motor driver for 3 seconds before stopping it. This README provides an overview, hardware connections, setup instructions, and usage details.
+Scenario
+The ESP32 acts as a Bluetooth Serial server named "ESP32_Ball". A Bluetooth-enabled device (e.g., an earphone with speech-to-text capabilities or a smartphone with a Bluetooth Serial app) pairs with the ESP32 and sends the word "ball" as text when recognized. The ESP32 listens for this command, updates the variable V to 1, and controls a DC motor via the L298N driver to run for 3 seconds in one direction before stopping. The system is designed for applications where a single voice command triggers a motor action, such as activating a mechanism in a robotic or IoT project.
+Hardware Requirements
+
+ESP32 Board: Any ESP32 development board (e.g., ESP32 DevKitC).
+L298N Motor Driver: To control the DC motor.
+DC Motor: Connected to the L298N (rated for 5–12V, depending on the power supply).
+Power Supply:
+
+For L298N: 5–12V (match the motor’s voltage rating, e.g., 9V battery).
+For ESP32: USB power or 5V via L298N’s 5V output (if enabled).
+
+
+Wires and Breadboard: For connections.
+Bluetooth Device: A Bluetooth earphone or smartphone capable of sending text data (e.g., "ball\n") via Bluetooth Serial. For testing, a smartphone app like "Serial Bluetooth Terminal" can be used.
+Computer: With Arduino IDE for programming the ESP32.
+
+Connections
+The L298N motor driver controls the DC motor, and the ESP32 communicates with the Bluetooth device. Below is the connection table:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+L298N PinESP32 PinDescriptionIN1GPIO 14Motor direction control (forward)IN2GPIO 15Motor direction control (reverse)ENAGPIO 13Motor speed control (PWM)VCCExternal 5–12VPower supply for motor (match motor voltage)GNDESP32 GNDCommon ground with ESP32 and power supplyOUT1Motor Terminal 1Motor connectionOUT2Motor Terminal 2Motor connection5V (optional)ESP32 VINPower ESP32 if using L298N’s 5V regulator
+Additional Notes:
+
+Connect the L298N GND to the ESP32 GND and the external power supply GND to ensure a common ground.
+If powering the ESP32 via USB, do not connect the L298N 5V output to ESP32 VIN to avoid conflicts.
+Ensure the motor power supply matches the motor’s voltage rating (e.g., 9V for a 9V motor).
+
+Setup Instructions
+1. Install Arduino IDE and ESP32 Support
+
+Download and install the Arduino IDE.
+Add ESP32 board support:
+
+Go to File > Preferences.
+Add https://raw.githubusercontent.com/espressif/arduino-esp32/master/package_esp32_index.json to "Additional Boards Manager URLs".
+Go to Tools > Board > Boards Manager, search for "esp32", and install the package by Espressif Systems.
+
+
+Select your ESP32 board (e.g., ESP32 Dev Module) under Tools > Board.
+
+2. Upload the Code
+
+Copy the following Arduino code into the Arduino IDE:
+cpp#include <BluetoothSerial.h>
+
+BluetoothSerial SerialBT; // Create Bluetooth Serial object
+int V = 0;               // Initialize variable V
+
+// L298N motor driver pins
+const int motorPin1 = 14; // IN1 on L298N
+const int motorPin2 = 15; // IN2 on L298N
+const int enablePin = 13; // ENA on L298N (PWM pin)
+
+void setup() {
+  Serial.begin(115200);        // Start Serial for debugging
+  SerialBT.begin("ESP32_Ball"); // Bluetooth device name
+  Serial.println("Bluetooth Started. Pair with ESP32_Ball");
+
+  // Set motor pins as outputs
+  pinMode(motorPin1, OUTPUT);
+  pinMode(motorPin2, OUTPUT);
+  pinMode(enablePin, OUTPUT);
+  
+  // Ensure motor is stopped initially
+  digitalWrite(motorPin1, LOW);
+  digitalWrite(motorPin2, LOW);
+  analogWrite(enablePin, 0);
+}
+
+void loop() {
+  if (SerialBT.available()) {
+    String received = SerialBT.readStringUntil('\n');
+    received.trim();
+    Serial.println("Received: " + received);
+    if (received.equalsIgnoreCase("ball")) {
+      V = 1;
+      Serial.println("Word 'ball' recognized. V = " + String(V));
+      
+      // Start motor (forward)
+      digitalWrite(motorPin1, HIGH);
+      digitalWrite(motorPin2, LOW);
+      analogWrite(enablePin, 255); // Full speed
+      Serial.println("Motor ON");
+      
+      delay(3000); // Run for 3 seconds
+      
+      // Stop motor
+      digitalWrite(motorPin1, LOW);
+      digitalWrite(motorPin2, LOW);
+      analogWrite(enablePin, 0);
+      Serial.println("Motor OFF");
+    }
+  }
+  delay(100);
+}
+
+Connect the ESP32 to your computer via USB.
+Select the correct board and port under Tools.
+Upload the code.
+
+3. Hardware Setup
+
+Connect the L298N, DC motor, and ESP32 as per the connection table.
+Power the L298N with an external power supply (e.g., 9V battery) matching the motor’s voltage.
+Power the ESP32 via USB or the L298N’s 5V output (if enabled, ensure no USB conflict).
+Verify all GNDs are connected (ESP32, L298N, power supply).
+
+4. Pair the Bluetooth Device
+
+Open the Serial Monitor in the Arduino IDE (set to 115200 baud) to view debug messages.
+On your Bluetooth device (earphone or smartphone), search for and pair with "ESP32_Ball".
+If using a smartphone, install a Bluetooth Serial app (e.g., Serial Bluetooth Terminal for Android).
+Configure the Bluetooth device to send "ball\n" (with a newline) when the word "ball" is recognized.
+
+5. Testing
+
+Send the word "ball" via the Bluetooth device (e.g., type "ball" in the app and send).
+Monitor the Serial Monitor to confirm:
+
+The ESP32 receives "ball".
+V changes to 1.
+The motor runs for 3 seconds and stops.
+
+
+The motor should start, run for 3 seconds, and stop each time "ball" is received.
+
+Usage
+
+Operation: After setup, the ESP32 listens for Bluetooth Serial data. When it receives "ball", it sets V = 1, starts the motor for 3 seconds, and stops it. The Serial Monitor displays the received data, V value, and motor status.
+Speech Recognition: The code assumes the Bluetooth device (e.g., earphone or app) handles speech recognition and sends "ball\n" as text. If your earphone doesn’t support this, use a smartphone app with speech-to-text (e.g., Google Assistant or a custom app) to send the text.
+Customization:
+
+Adjust motor speed by changing the PWM value in analogWrite(enablePin, 255) (0–255).
+Modify the motor runtime by changing delay(3000) (in milliseconds).
+Add more commands by extending the if condition in the code.
+
+
+
+Notes
+
+Speech Recognition: The ESP32 cannot perform speech recognition itself. The Bluetooth device must convert the voice command "ball" to text and send it via Bluetooth Serial.
+Power Supply: Ensure the L298N power supply matches the motor’s voltage. A weak supply may cause the motor to stall.
+Bluetooth Testing: For testing, use a Bluetooth Serial app to send "ball\n" manually. Ensure the app sends a newline (\n) as a terminator.
+PWM Pins: GPIO 13 is used for PWM. Most ESP32 GPIO pins support PWM, but avoid boot-related pins (e.g., GPIO 0).
+Safety: Double-check wiring to avoid short circuits. Disconnect power when modifying connections.
+
+Troubleshooting
+
+Motor Not Running:
+
+Verify L298N connections and power supply voltage.
+Test the motor independently with the L298N.
+Check that GPIO 13, 14, and 15 are correctly connected.
+
+
+Bluetooth Not Connecting:
+
+Ensure the device is paired with "ESP32_Ball" and within range.
+Restart the ESP32 if pairing fails.
+Confirm the app sends "ball\n" with a newline.
+
+
+No Data Received: Check the Serial Monitor for received data. Ensure the Bluetooth device is configured to send text correctly.
+ESP32 Not Responding: Verify the correct board and port in the Arduino IDE. Check for loose connections.
+
+License
+This project is open-source and provided as-is. Use at your own risk.
+
+This README provides a clear guide for setting up and using the project. If you need further customization (e.g., adding more commands, changing motor direction, or integrating a specific speech-to-text app), let me know!1,8сБыстроCreate table,that can best understamd/For more complicated scenario:Include:model of arduino.can be couple of arduino connected on to other.Driver dc motor input pis output pins elements included in schema(switches IR sensors)Explanation connection example output pin 5 arduino uno connected PWM to l298n driver EnA.Can be possibility set default staus for pins switches motors.Add plase for print (logs)Below is an updated README.md file tailored for a more complex scenario where multiple Arduino boards (e.g., ESP32 and Arduino Uno) are connected, incorporating an L298N motor driver, a DC motor, switches, and IR sensors. The project still focuses on recognizing the voice command "ball" via Bluetooth Serial on an ESP32 to set a variable V from 0 to 1 and control a DC motor for 3 seconds. The Arduino Uno is added to handle additional inputs (e.g., switches, IR sensors) and communicate with the ESP32. The README includes a detailed connection table, explanations of the schema, default pin states, and logging for debugging.
+The table is designed for clarity and ease of understanding, with comprehensive details about connections, pin assignments, and components. The code includes provisions for default pin states, switch and IR sensor handling, and logging via Serial Monitor.
+
+Multi-Arduino Voice Command DC Motor Control with Sensors
+This project extends the basic ESP32 voice command setup to a more complex scenario involving multiple Arduino boards (ESP32 and Arduino Uno), an L298N motor driver, a DC motor, switches, and IR sensors. The ESP32 receives the voice command "ball" via Bluetooth Serial, sets a variable V from 0 to 1, and controls a DC motor for 3 seconds. The Arduino Uno handles additional inputs (switches and IR sensors) and communicates with the ESP32 to enhance the system. This README provides a clear connection table, scenario explanation, setup instructions, and usage details, with provisions for default pin states and logging.
+Scenario
+The system consists of:
+
+ESP32: Acts as the primary controller, receiving the voice command "ball" via Bluetooth Serial (from an earphone or smartphone app). Upon recognizing "ball", it sets V = 1, activates a DC motor via the L298N driver for 3 seconds, and communicates with the Arduino Uno.
+Arduino Uno: Monitors inputs from a switch and an IR sensor, sending their states to the ESP32 via serial communication (e.g., SoftwareSerial or hardware Serial). It can trigger additional actions or modify motor behavior based on sensor inputs.
+L298N Motor Driver: Controls a DC motor, with PWM speed control from the ESP32 (or optionally the Uno).
+Switch: A push-button switch to manually trigger actions (e.g., override motor control).
+IR Sensor: Detects obstacles or motion to modify system behavior (e.g., stop the motor if an obstacle is detected).
+Communication: The ESP32 and Uno communicate via serial (e.g., TX/RX pins) to coordinate actions.
+
+The motor runs for 3 seconds when "ball" is received, but the Uno can override or modify this based on switch or IR sensor inputs. Default pin states ensure the motor and outputs are off at startup. Logs are printed to the Serial Monitor for debugging.
+Hardware Requirements
+
+ESP32 Board: E.g., ESP32 DevKitC (handles Bluetooth and motor control).
+Arduino Uno: Handles switch and IR sensor inputs.
+L298N Motor Driver: Controls the DC motor.
+DC Motor: Rated for 5–12V, connected to L298N.
+Push-Button Switch: For manual input (e.g., start/stop motor).
+IR Sensor: For detecting obstacles or motion (e.g., TCRT5000 or similar).
+Power Supply:
+
+L298N: 5–12V (match motor voltage, e.g., 9V battery).
+ESP32: USB or 5V via L298N (if enabled).
+Arduino Uno: USB or 7–12V via barrel jack.
+
+
+Wires and Breadboard: For connections.
+Bluetooth Device: Earphone or smartphone app (e.g., Serial Bluetooth Terminal) to send "ball\n" via Bluetooth Serial.
+Computer: With Arduino IDE for programming.
+
+Connection Table
+The following table details the connections between the ESP32, Arduino Uno, L298N, DC motor, switch, and IR sensor. It includes input/output pin assignments and default states for clarity.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ComponentPin/ConnectionConnected ToDefault StateDescriptionESP32GPIO 14 (Output)L298N IN1L298N Motor DriverLOWMotor direction (forward)GPIO 15 (Output)L298N IN2L298N Motor DriverLOWMotor direction (reverse)GPIO 13 (PWM Output)L298N ENAL298N Motor Driver0 (PWM off)Motor speed control (PWM, 0–255)TX2 (GPIO 17)Uno RX (Pin 10)Arduino Uno (SoftwareSerial)-Serial communication to Uno (ESP32 sends data)RX2 (GPIO 16)Uno TX (Pin 11)Arduino Uno (SoftwareSerial)-Serial communication from Uno (ESP32 receives data)GNDCommon GNDL298N, Uno, Power Supply-Common ground for all componentsArduino UnoPin 5 (PWM Output)L298N ENA (optional)L298N Motor Driver0 (PWM off)Optional PWM control if Uno drives motorPin 2 (Input)Switch OutputPush-Button SwitchHIGH (pull-up)Reads switch state (LOW when pressed)Pin 3 (Input)IR Sensor OutputIR Sensor (e.g., TCRT5000)HIGH (pull-up)Reads IR sensor state (LOW when obstacle detected)Pin 10 (SoftwareSerial RX)ESP32 TX2 (GPIO 17)ESP32-Receives serial data from ESP32Pin 11 (SoftwareSerial TX)ESP32 RX2 (GPIO 16)ESP32-Sends serial data to ESP32GNDCommon GNDESP32, L298N, Power Supply-Common groundL298N Motor DriverIN1ESP32 GPIO 14ESP32LOWMotor direction input (forward)IN2ESP32 GPIO 15ESP32LOWMotor direction input (reverse)ENAESP32 GPIO 13 or Uno Pin 5ESP32 or Uno (PWM)0 (PWM off)Motor speed control (PWM)OUT1Motor Terminal 1DC Motor-Motor connectionOUT2Motor Terminal 2DC Motor-Motor connectionVCCExternal 5–12VPower Supply-Motor power (match motor voltage)GNDCommon GNDESP32, Uno, Power Supply-Common ground5V (optional)ESP32 VIN or Uno VINESP32 or Uno-Powers ESP32/Uno if regulator enabled (avoid USB conflict)SwitchOne legUno Pin 2Arduino Uno-Connected to input pin with pull-up resistorOther legGNDCommon GND-Grounds switch when pressedIR SensorOUTUno Pin 3Arduino Uno-Sends LOW when obstacle detectedVCC5V (Uno or L298N)Power Supply-Power for IR sensor (3.3V or 5V, check sensor specs)GNDCommon GNDESP32, Uno, L298N-Common ground
+Connection Example:
+
+ESP32 GPIO 13 to L298N ENA: Controls motor speed via PWM (e.g., analogWrite(13, 255) for full speed).
+Arduino Uno Pin 5 to L298N ENA (optional): If the Uno controls the motor speed, connect Pin 5 (PWM) to ENA instead of ESP32 GPIO 13. This allows the Uno to adjust speed based on switch or IR sensor inputs.
+Switch to Uno Pin 2: A push-button switch connected to Pin 2 (with internal pull-up) goes LOW when pressed, triggering an action (e.g., send a signal to the ESP32).
+IR Sensor to Uno Pin 3: The IR sensor (e.g., TCRT5000) outputs LOW when an obstacle is detected, allowing the Uno to notify the ESP32 to stop the motor.
+
+Explanation of Schema
+
+ESP32 Role: Handles Bluetooth communication and primary motor control. It listens for "ball\n" via Bluetooth Serial, sets V = 1, and drives the motor via L298N (IN1 HIGH, IN2 LOW, ENA PWM 255) for 3 seconds. It communicates with the Uno via serial to receive switch/IR sensor states.
+Arduino Uno Role: Monitors the switch (Pin 2) and IR sensor (Pin 3). If the switch is pressed or the IR sensor detects an obstacle, the Uno sends a message to the ESP32 (e.g., "STOP" or "SWITCH"). The Uno can optionally control the motor’s PWM (Pin 5 to ENA) for advanced scenarios.
+L298N and Motor: The L298N drives the DC motor. The ESP32 typically controls IN1, IN2, and ENA, but the Uno can take over ENA for PWM control if needed.
+Switch: Provides manual input to trigger actions (e.g., start/stop motor or override voice command).
+IR Sensor: Detects obstacles, allowing the system to stop the motor or take alternative actions (e.g., reverse direction).
+Serial Communication: The ESP32 (TX2/RX2) and Uno (Pin 10/11 via SoftwareSerial) exchange data to coordinate actions. For example, the Uno sends "OBSTACLE" if the IR sensor is triggered, and the ESP32 may stop the motor.
+Default States: All outputs (motor pins, PWM) are set to LOW or 0 at startup to prevent unintended motor activation. Inputs (switch, IR sensor) use pull-up resistors to default to HIGH (inactive).
+Logging: Both boards print logs to their respective Serial Monitors (115200 baud) for debugging, including received Bluetooth data, V value, motor status, switch state, and IR sensor state.
+
+Arduino Code
+ESP32 Code
+cpp#include <BluetoothSerial.h>
+
+BluetoothSerial SerialBT;
+int V = 0;
+
+// L298N pins
+const int motorPin1 = 14; // IN1
+const int motorPin2 = 15; // IN2
+const int enablePin = 13; // ENA (PWM)
+
+// Serial to Uno
+HardwareSerial Serial2(2); // Use UART2 (TX2: GPIO 17, RX2: GPIO 16)
+
+void setup() {
+  Serial.begin(115200);        // Debug Serial
+  SerialBT.begin("ESP32_Ball"); // Bluetooth device name
+  Serial2.begin(9600);         // Serial to Uno
+  Serial.println("ESP32: Bluetooth Started. Pair with ESP32_Ball");
+
+  // Initialize motor pins
+  pinMode(motorPin1, OUTPUT);
+  pinMode(motorPin2, OUTPUT);
+  pinMode(enablePin, OUTPUT);
+  
+  // Default state: motor off
+  digitalWrite(motorPin1, LOW);
+  digitalWrite(motorPin2, LOW);
+  analogWrite(enablePin, 0);
+  Serial.println("ESP32: Motor OFF (default)");
+}
+
+void loop() {
+  // Check Bluetooth data
+  if (SerialBT.available()) {
+    String received = SerialBT.readStringUntil('\n');
+    received.trim();
+    Serial.println("ESP32: Received via Bluetooth: " + received);
+    if (received.equalsIgnoreCase("ball")) {
+      V = 1;
+      Serial.println("ESP32: Word 'ball' recognized. V = " + String(V));
+      
+      // Check Uno for sensor/switch data
+      if (Serial2.available()) {
+        String unoData = Serial2.readStringUntil('\n');
+        unoData.trim();
+        Serial.println("ESP32: Received from Uno: " + unoData);
+        if (unoData == "OBSTACLE") {
+          Serial.println("ESP32: Obstacle detected, motor not started");
+          return; // Skip motor activation
+        }
+      }
+      
+      // Start motor
+      digitalWrite(motorPin1, HIGH);
+      digitalWrite(motorPin2, LOW);
+      analogWrite(enablePin, 255); // Full speed
+      Serial.println("ESP32: Motor ON");
+      
+      delay(3000); // Run for 3 seconds
+      
+      // Stop motor
+      digitalWrite(motorPin1, LOW);
+      digitalWrite(motorPin2, LOW);
+      analogWrite(enablePin, 0);
+      Serial.println("ESP32: Motor OFF");
+    }
+  }
+
+  // Check Uno data (e.g., switch pressed)
+  if (Serial2.available()) {
+    String unoData = Serial2.readStringUntil('\n');
+    unoData.trim();
+    Serial.println("ESP32: Received from Uno: " + unoData);
+    if (unoData == "SWITCH") {
+      Serial.println("ESP32: Switch pressed, manual override");
+      // Example: Toggle motor manually
+      digitalWrite(motorPin1, HIGH);
+      digitalWrite(motorPin2, LOW);
+      analogWrite(enablePin, 128); // Half speed
+      Serial.println("ESP32: Motor ON (manual)");
+      delay(2000);
+      digitalWrite(motorPin1, LOW);
+      digitalWrite(motorPin2, LOW);
+      analogWrite(enablePin, 0);
+      Serial.println("ESP32: Motor OFF (manual)");
+    }
+  }
+  delay(100);
+}
+Arduino Uno Code
+cpp#include <SoftwareSerial.h>
+
+SoftwareSerial espSerial(10, 11); // RX: Pin 10, TX: Pin 11
+const int switchPin = 2;         // Switch input
+const int irPin = 3;             // IR sensor input
+const int motorPwmPin = 5;       // Optional PWM to L298N ENA
+
+void setup() {
+  Serial.begin(115200);        // Debug Serial
+  espSerial.begin(9600);       // Serial to ESP32
+  pinMode(switchPin, INPUT_PULLUP); // Switch with internal pull-up
+  pinMode(irPin, INPUT_PULLUP);     // IR sensor with internal pull-up
+  pinMode(motorPwmPin, OUTPUT);     // Optional PWM output
+  analogWrite(motorPwmPin, 0);      // Default: PWM off
+  Serial.println("Uno: Initialized. Switch and IR sensor ready.");
+}
+
+void loop() {
+  // Read switch
+  if (digitalRead(switchPin) == LOW) {
+    Serial.println("Uno: Switch pressed");
+    espSerial.println("SWITCH"); // Send to ESP32
+    delay(200); // Debounce
+  }
+
+  // Read IR sensor
+  if (digitalRead(irPin) == LOW) {
+    Serial.println("Uno: IR sensor detected obstacle");
+    espSerial.println("OBSTACLE"); // Send to ESP32
+    delay(200); // Debounce
+  }
+
+  // Optional: Control motor PWM if connected
+  if (espSerial.available()) {
+    String espData = espSerial.readStringUntil('\n');
+    espData.trim();
+    Serial.println("Uno: Received from ESP32: " + espData);
+    // Example: Uno takes over PWM if needed
+  }
+
+  delay(100);
+}
+Setup Instructions
+1. Install Arduino IDE and ESP32 Support
+
+Download and install the Arduino IDE.
+Add ESP32 support:
+
+Go to File > Preferences.
+Add https://raw.githubusercontent.com/espressif/arduino-esp32/master/package_esp32_index.json to "Additional Boards Manager URLs".
+Go to Tools > Board > Boards Manager, search for "esp32", and install the Espressif Systems package.
+
+
+Select ESP32 Dev Module for the ESP32 and Arduino Uno for the Uno under Tools > Board.
+
+2. Upload the Code
+
+ESP32:
+
+Copy the ESP32 code into the Arduino IDE.
+Connect the ESP32 via USB, select the correct board and port.
+Upload the code.
+
+
+Arduino Uno:
+
+Copy the Uno code into the Arduino IDE.
+Connect the Uno via USB, select the correct board and port.
+Upload the code.
+
+
+
+3. Hardware Setup
+
+Connect components as per the connection table.
+Power the L298N with a 5–12V supply (match motor voltage).
+Power the ESP32 via USB or L298N 5V (if enabled, avoid USB conflict).
+Power the Uno via USB or 7–12V barrel jack.
+Ensure all GNDs (ESP32, Uno, L298N, power supply) are connected.
+Connect the switch and IR sensor to the Uno with pull-up resistors (internal or external).
+
+4. Pair the Bluetooth Device
+
+Open the Serial Monitor (115200 baud) for both boards.
+Pair your Bluetooth device (earphone or smartphone) with "ESP32_Ball".
+Use a Bluetooth Serial app (e.g., Serial Bluetooth Terminal) for testing.
+Ensure the device sends "ball\n" (with a newline).
+
+5. Testing
+
+Send "ball" via the Bluetooth device.
+Monitor the ESP32 Serial Monitor to confirm:
+
+"ball" is received, V = 1, motor runs for 3 seconds (unless overridden).
+
+
+Monitor the Uno Serial Monitor to confirm:
+
+Switch presses or IR sensor triggers are logged and sent to the ESP32.
+
+
+Test the switch (press to send "SWITCH") and IR sensor (block to send "OBSTACLE").
+Verify motor behavior: runs for 3 seconds on "ball" unless an obstacle is detected.
+
+Usage
+
+Operation: The ESP32 listens for "ball" via Bluetooth, sets V = 1, and runs the motor for 3 seconds. The Uno monitors the switch and IR sensor, sending "SWITCH" or "OBSTACLE" to the ESP32, which can override or modify motor behavior (e.g., stop if obstacle detected).
+Speech Recognition: The Bluetooth device must send "ball\n" as text. Use a speech-to-text app or earphone with text output.
+Default States: Motor pins are LOW/0, switch and IR inputs are HIGH (pull-up) at startup.
+Logging: Both boards print detailed logs (e.g., received data, V value, motor status, sensor states) to their Serial Monitors.
+Customization:
+
+Adjust motor speed: Change analogWrite(enablePin, 255) (0–255).
+Modify motor runtime: Change delay(3000).
+Add more commands: Extend the if conditions in both codes.
+Uno PWM control: Connect Uno Pin 5 to ENA for Uno-driven speed control.
+
+
+
+Notes
+
+Speech Recognition: The ESP32 relies on the Bluetooth device for speech-to-text. Test with a Bluetooth Serial app sending "ball\n".
+Power Supply: Ensure adequate power for the motor (e.g., 9V for a 9V motor). Weak supply may cause stalling.
+Serial Communication: ESP32 UART2 (GPIO 16/17) and Uno SoftwareSerial (Pins 10/11) must match baud rates (9600).
+IR Sensor: Adjust sensitivity if needed (some sensors have potentiometers).
+Safety: Verify wiring to avoid short circuits. Disconnect power when modifying connections.
+
+Troubleshooting
+
+Motor Issues: Check L298N connections, power supply, and pin assignments. Test motor independently.
+Bluetooth Failure: Ensure pairing with "ESP32_Ball". Verify the app sends "ball\n". Restart ESP32 if needed.
+Serial Communication: Confirm ESP32 TX2/RX2 to Uno Pin 10/11 connections and matching baud rates.
+Sensor Issues: Check switch/IR sensor wiring. Ensure pull-up resistors are enabled. Test with Serial Monitor.
+No Response: Verify board/port selection in Arduino IDE. Check for loose connections.
